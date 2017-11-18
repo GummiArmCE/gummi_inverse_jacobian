@@ -113,22 +113,22 @@ GummiInverseJacobian::GummiInverseJacobian()
   joint_stiffnesses_.at(0) = -0.25;
   joint_stiffnesses_.at(6) = -0.75;
 
-  joint_cmd_pub_ = nh_.advertise<sensor_msgs::JointState>("teleop/joint_commands", 1);
+  joint_cmd_pub_ = nh_.advertise<sensor_msgs::JointState>("inverse_jacobian/joint_commands", 1);
 
-  joint_state_sub_ = nh_.subscribe<sensor_msgs::JointState>("teleop/joint_states", 10, &GummiInverseJacobian::jointStateCallback, this);
-  desired_sub_ = nh_.subscribe<geometry_msgs::Twist>("teleop/cmd_vel", 10, &GummiInverseJacobian::desiredCallback, this);
+  joint_state_sub_ = nh_.subscribe<sensor_msgs::JointState>("inverse_jacobian/joint_states", 10, &GummiInverseJacobian::jointStateCallback, this);
+  desired_sub_ = nh_.subscribe<geometry_msgs::Twist>("inverse_jacobian/cmd_vel", 10, &GummiInverseJacobian::desiredCallback, this);
   
 }
 
 void GummiInverseJacobian::findAndSetParameters()
 {
-  nh_.param("teleop/num_joints", num_joints_, 7);
-  nh_.param("teleop/debug_mode", debug_mode_, false);
-  nh_.param("teleop/control_gain", control_gain_ , 0.01);
-  nh_.param("teleop/control_gain_pose", control_gain_pose_ , 0.001);
-  nh_.param("teleop/max_joint_vel", max_joint_vel_, 0.04);
-  nh_.param("teleop/scale_translation", scale_translation_, 0.5);
-  nh_.param("teleop/scale_rotation", scale_rotation_, 1.0);
+  nh_.param("inverse_jacobian/num_joints", num_joints_, 7);
+  nh_.param("inverse_jacobian/debug_mode", debug_mode_, false);
+  nh_.param("inverse_jacobian/control_gain", control_gain_ , 0.01);
+  nh_.param("inverse_jacobian/control_gain_pose", control_gain_pose_ , 0.001);
+  nh_.param("inverse_jacobian/max_joint_vel", max_joint_vel_, 0.04);
+  nh_.param("inverse_jacobian/scale_translation", scale_translation_, 0.5);
+  nh_.param("inverse_jacobian/scale_rotation", scale_rotation_, 1.0);
 }
 
 void GummiInverseJacobian::doUpdate()
@@ -310,7 +310,7 @@ double GummiInverseJacobian::limitJointVelocity(double vel, double max_current_v
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "gummi_inverse_jacobian");
-  GummiInverseJacobian gummi_teleop;
+  GummiInverseJacobian gummi_inverse_jacobian;
 
   ros::spin();
 
