@@ -35,20 +35,17 @@ private:
   ros::NodeHandle nh_;
 
   int num_joints_;
-  bool debug_mode_;
   ros::Publisher joint_cmd_pub_;
   ros::Subscriber desired_sub_, joint_state_sub_;
   std::vector<std::string> joint_names_;
   std::vector<double> current_joint_positions_;
   bool received_joint_positions_;
-  std::vector<double> joint_stiffnesses_;
+  std::vector<double> joint_co_contractions_;
 
   moveit::core::RobotModelPtr kinematic_model_;
   moveit::core::RobotStatePtr kinematic_state_;
   const moveit::core::JointModelGroup* joint_model_group_;
   ros::Time timeOfLastJointState_;
-  double control_gain_;
-  double control_gain_pose_;
   std::vector<double> desired_joint_velocities_;
   geometry_msgs::Twist zero_vel_;
   geometry_msgs::Twist desired_vel_;
@@ -101,14 +98,13 @@ GummiInverseJacobian::GummiInverseJacobian()
       if (!(*joint)->isPassive()) {
 	std::string name = (*joint)->getName();
 	joint_names_.push_back(name);
-	printf("Active joint found: %s.\n", name.c_str()); 
+	printf("Active joint included: %s.\n", name.c_str()); 
       }
     }
   }
-  printf("Included first %d joints in robot model.\n", (int) joint_names_.size());
 
   for(int i = 0; i < num_joints_; i++) {
-    joint_stiffnesses_.push_back(-0.3);
+    joint_co_contractions_.push_back(-0.5);
     desired_joint_velocities_.push_back(0.0);
     current_joint_positions_.push_back(0.0);
   }
@@ -123,9 +119,6 @@ GummiInverseJacobian::GummiInverseJacobian()
 void GummiInverseJacobian::findAndSetParameters()
 {
   nh_.param("inverse_jacobian/num_joints", num_joints_, 7);
-  nh_.param("inverse_jacobian/debug_mode", debug_mode_, false);
-  nh_.param("inverse_jacobian/control_gain", control_gain_ , 0.01);
-  nh_.param("inverse_jacobian/control_gain_pose", control_gain_pose_ , 0.001);
   nh_.param("inverse_jacobian/max_joint_vel", max_joint_vel_, 0.04);
   nh_.param("inverse_jacobian/scale_translation", scale_translation_, 0.5);
   nh_.param("inverse_jacobian/scale_rotation", scale_rotation_, 1.0);
@@ -277,7 +270,7 @@ void GummiInverseJacobian::publishJointVelocities()
   std::vector<double> positions;
 
   message.name = joint_names_;
-  message.effort = joint_stiffnesses_;
+  message.effort = joint_co_contractions_;
   message.velocity = desired_joint_velocities_;
 
   joint_cmd_pub_.publish(message);
