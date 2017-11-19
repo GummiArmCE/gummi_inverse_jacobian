@@ -97,21 +97,21 @@ GummiInverseJacobian::GummiInverseJacobian()
   const std::vector<std::string>&  j_n = kinematic_model_->getJointModelNames();
   const std::vector< moveit::core::JointModel * > & joint_models = kinematic_model_->getActiveJointModels();
   for(std::vector< moveit::core::JointModel * >::const_iterator joint = joint_models.begin(); joint != joint_models.end(); joint++) {
-    if (!(*joint)->isPassive()) {
-      std::string name = (*joint)->getName();
-      joint_names_.push_back(name);
-      printf("Active joint found: %s.\n", name.c_str()); 
+    if (joint_names_.size() < num_joints_) {
+      if (!(*joint)->isPassive()) {
+	std::string name = (*joint)->getName();
+	joint_names_.push_back(name);
+	printf("Active joint found: %s.\n", name.c_str()); 
+      }
     }
   }
-  assert(joint_names_.size() == num_joints_);
+  printf("Included first %d joints in robot model.\n", (int) joint_names_.size());
 
   for(int i = 0; i < num_joints_; i++) {
-    joint_stiffnesses_.push_back(-0.1);
+    joint_stiffnesses_.push_back(-0.3);
     desired_joint_velocities_.push_back(0.0);
     current_joint_positions_.push_back(0.0);
   }
-  joint_stiffnesses_.at(0) = -0.25;
-  joint_stiffnesses_.at(6) = -0.75;
 
   joint_cmd_pub_ = nh_.advertise<sensor_msgs::JointState>("inverse_jacobian/joint_commands", 1);
 
