@@ -1,9 +1,11 @@
-<launch>	
-  <param name="robot_description" command="cat $(find gummi_description)/gummi.urdf" />
-  <param name="robot_description_semantic" command="cat $(find gummi_moveit_config)/config/gummi.srdf" />	
-  <node name="inverse_jacobian" pkg="gummi_inverse_jacobian" type="gummi_inverse_jacobian_node" output="screen">	
-  	<remap from="inverse_jacobian/joint_states" to="gummi/joint_states"/>
-	<remap from="inverse_jacobian/joint_commands" to="gummi/joint_commands"/>	
-	<rosparam file="$(find gummi_inverse_jacobian)/config/inverse_jacobian.yaml" command="load" />					  
+<launch>
+  <arg name="base" value="$(env ROS_GUMMI_BASE)"/>
+  <param name="robot_description" command="cat $(find gummi_base_template)/gummi_description.urdf" />
+  <param name="robot_description_semantic" command="cat $(find gummi_base_template)/config/gummi.srdf" />
+  <node name="inverse_jacobian" pkg="gummi_inverse_jacobian" type="gummi_inverse_jacobian_node" output="screen">
+  	 <remap from="inverse_jacobian/joint_states" to="gummi/joint_states"/>
+	   <remap from="inverse_jacobian/joint_commands" to="gummi/joint_commands"/>
+     <remap from="inverse_jacobian/cmd_vel" to="spacenav/twist"/>
+	   <rosparam file="$(find gummi_inverse_jacobian)/config/inverse_jacobian.yaml" command="load" />
   </node>
 </launch>

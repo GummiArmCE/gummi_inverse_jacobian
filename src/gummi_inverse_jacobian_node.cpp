@@ -65,7 +65,7 @@ GummiInverseJacobian::GummiInverseJacobian()
   KDL::Tree kdl_tree;
   KDL::Chain chain;
   std::string robot_desc_string;
-  
+
   received_joint_positions_ = false;
   zero_vel_.linear.x = 0.0;
   zero_vel_.linear.y = 0.0;
@@ -77,9 +77,9 @@ GummiInverseJacobian::GummiInverseJacobian()
 
   findAndSetParameters();
 
-  robot_model_loader::RobotModelLoader robot_model_loader("robot_description"); 
+  robot_model_loader::RobotModelLoader robot_model_loader("robot_description");
   kinematic_model_ = robot_model_loader.getModel();
-  ROS_INFO("Model frame: %s", kinematic_model_->getModelFrame().c_str());  
+  ROS_INFO("Model frame: %s", kinematic_model_->getModelFrame().c_str());
 
   nh_.param("robot_description", robot_desc_string, std::string());
   if (!kdl_parser::treeFromString(robot_desc_string, kdl_tree)){
@@ -96,15 +96,15 @@ GummiInverseJacobian::GummiInverseJacobian()
   for(std::vector< moveit::core::JointModel * >::const_iterator joint = joint_models.begin(); joint != joint_models.end(); joint++) {
     if (joint_names_.size() < num_joints_) {
       if (!(*joint)->isPassive()) {
-	std::string name = (*joint)->getName();
-	joint_names_.push_back(name);
-	printf("Active joint included: %s.\n", name.c_str()); 
+        std::string name = (*joint)->getName();
+        joint_names_.push_back(name);
+        printf("Active joint included: %s.\n", name.c_str());
       }
     }
   }
 
   for(int i = 0; i < num_joints_; i++) {
-    joint_co_contractions_.push_back(-0.5);
+    joint_co_contractions_.push_back(-0.01);
     desired_joint_velocities_.push_back(0.0);
     current_joint_positions_.push_back(0.0);
   }
@@ -113,15 +113,15 @@ GummiInverseJacobian::GummiInverseJacobian()
 
   joint_state_sub_ = nh_.subscribe<sensor_msgs::JointState>("inverse_jacobian/joint_states", 10, &GummiInverseJacobian::jointStateCallback, this);
   desired_sub_ = nh_.subscribe<geometry_msgs::Twist>("inverse_jacobian/cmd_vel", 10, &GummiInverseJacobian::desiredCallback, this);
-  
+
 }
 
 void GummiInverseJacobian::findAndSetParameters()
 {
   nh_.param("inverse_jacobian/num_joints", num_joints_, 7);
-  nh_.param("inverse_jacobian/max_joint_vel", max_joint_vel_, 0.04);
-  nh_.param("inverse_jacobian/scale_translation", scale_translation_, 0.5);
-  nh_.param("inverse_jacobian/scale_rotation", scale_rotation_, 1.0);
+  nh_.param("inverse_jacobian/max_joint_vel", max_joint_vel_, 0.3);
+  nh_.param("inverse_jacobian/scale_translation", scale_translation_, 0.0005);
+  nh_.param("inverse_jacobian/scale_rotation", scale_rotation_, 0.0005);
 }
 
 void GummiInverseJacobian::doUpdate()
@@ -139,14 +139,14 @@ void GummiInverseJacobian::doUpdate()
 
     }
     else {
-      
+
       geometry_msgs::Twist vel = desired_vel_;
 
       calculateDesiredJointVelocity(vel);
       publishJointVelocities();
 
     }
-    
+
   }
   else {
     printf("Warning: Not connected to robot, not sending command.\n");
@@ -154,7 +154,7 @@ void GummiInverseJacobian::doUpdate()
   }
 
   ros::Duration(0.01).sleep();
-  
+
 }
 
 void GummiInverseJacobian::desiredCallback(const geometry_msgs::Twist::ConstPtr& desired)
@@ -172,13 +172,16 @@ void GummiInverseJacobian::jointStateCallback(const sensor_msgs::JointState::Con
   for(int i = 0; i < num_joints_; i++) {
     std::string name = joint_names_.at(i);
     double position = 0.0;
+    double effort = 0.0;
 
     for(int j = 0; j < in.name.size(); j++) {
 
       if(name.compare(in.name[j]) == 0)  {
-	position = in.position[j];
-	current_joint_positions_.at(i) = position; // TODO: mstoelen, break if cannot find
-	break;
+	      position = in.position[j];
+        effort = in.effort[j];
+	      current_joint_positions_.at(i) = position; // TODO: mstoelen, break if cannot find
+        joint_co_contractions_.at(i) = effort; // TODO: mstoelen, break if cannot find
+	      break;
       }
 
     }
@@ -191,14 +194,14 @@ void GummiInverseJacobian::jointStateCallback(const sensor_msgs::JointState::Con
 
 }
 
-geometry_msgs::Twist GummiInverseJacobian::scaleDesired(geometry_msgs::Twist desired) 
+geometry_msgs::Twist GummiInverseJacobian::scaleDesired(geometry_msgs::Twist desired)
 {
   geometry_msgs::Twist out;
 
   out.linear.x = desired.linear.x * scale_translation_;
   out.linear.y = desired.linear.y * scale_translation_;
   out.linear.z = desired.linear.z * scale_translation_;
-  
+
   out.angular.x = desired.angular.x * scale_rotation_;
   out.angular.y = desired.angular.y * scale_rotation_;
   out.angular.z = desired.angular.z * scale_rotation_;
@@ -230,11 +233,11 @@ void GummiInverseJacobian::calculateDesiredJointVelocity(geometry_msgs::Twist de
     printf("FK not solved!\n");
     assert(false);
   }
- 
+
   KDL::Frame F_at_hand = F_current;
-  F_at_hand.M = KDL::Rotation::Identity();
-  
-  T_desired = F_at_hand * T_desired; 
+  //F_at_hand.M = KDL::Rotation::Identity();
+
+  T_desired = F_at_hand * T_desired;
 
   int ret_ik = ik_solver_->CartToJnt(q_current,T_desired, qdot);
   if(ret_ik < 0) {
@@ -252,7 +255,7 @@ void GummiInverseJacobian::calculateDesiredJointVelocity(geometry_msgs::Twist de
   if(max_current_joint_vel > max_joint_vel_) {
     printf("Warning: Limiting joint velocities.\n");
     for(unsigned int i=0; i<num_joints_; i++) {
-      desired_joint_velocities_.at(i) = limitJointVelocity(qdot(i), max_current_joint_vel); 
+      desired_joint_velocities_.at(i) = limitJointVelocity(qdot(i), max_current_joint_vel);
     }
   }
   else {
@@ -260,7 +263,7 @@ void GummiInverseJacobian::calculateDesiredJointVelocity(geometry_msgs::Twist de
       desired_joint_velocities_.at(i) = qdot(i);
     }
   }
-  
+
 }
 
 void GummiInverseJacobian::publishJointVelocities()
@@ -271,6 +274,7 @@ void GummiInverseJacobian::publishJointVelocities()
 
   message.name = joint_names_;
   message.effort = joint_co_contractions_;
+  message.position = current_joint_positions_;
   message.velocity = desired_joint_velocities_;
 
   joint_cmd_pub_.publish(message);
@@ -308,4 +312,3 @@ int main(int argc, char** argv)
   ros::spin();
 
 }
-
