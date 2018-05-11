@@ -104,7 +104,7 @@ GummiInverseJacobian::GummiInverseJacobian()
   }
 
   for(int i = 0; i < num_joints_; i++) {
-    joint_co_contractions_.push_back(-0.01);
+    joint_co_contractions_.push_back(0.0);
     desired_joint_velocities_.push_back(0.0);
     current_joint_positions_.push_back(0.0);
   }
