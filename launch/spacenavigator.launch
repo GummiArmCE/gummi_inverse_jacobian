@@ -1,0 +1,4 @@
+<launch>
+  <include file = "$(find spacenav_node)/launch/no_deadband.launch"/>
+  <remap from="inverse_jacobian/cmd_vel" to="spacenav/twist"/>
+</launch>
