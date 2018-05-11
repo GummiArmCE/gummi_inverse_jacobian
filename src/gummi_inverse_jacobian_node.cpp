@@ -53,6 +53,7 @@ private:
   double min_joint_vel_;
   double scale_translation_;
   double scale_rotation_;
+  bool force_negative_effort_;
 
   KDL::ChainFkSolverPos_recursive* fk_solver_;
   KDL::ChainIkSolverVel_pinv* ik_solver_;
@@ -122,6 +123,7 @@ void GummiInverseJacobian::findAndSetParameters()
   nh_.param("inverse_jacobian/max_joint_vel", max_joint_vel_, 0.3);
   nh_.param("inverse_jacobian/scale_translation", scale_translation_, 0.0005);
   nh_.param("inverse_jacobian/scale_rotation", scale_rotation_, 0.0005);
+  nh_.param("inverse_jacobian/force_negative_effort", force_negative_effort_, false);
 }
 
 void GummiInverseJacobian::doUpdate()
@@ -273,7 +275,14 @@ void GummiInverseJacobian::publishJointVelocities()
   std::vector<double> positions;
 
   message.name = joint_names_;
-  message.effort = joint_co_contractions_;
+  if(force_negative_effort_) {
+    for(int i = 0; i < num_joints_; i++) {
+      message.effort.push_back(-std::abs(joint_co_contractions_.at(i)));
+    }
+  }
+  else {
+    message.effort = joint_co_contractions_;
+  }
   message.position = current_joint_positions_;
   message.velocity = desired_joint_velocities_;
 
