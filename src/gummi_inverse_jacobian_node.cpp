@@ -283,9 +283,9 @@ void GummiInverseJacobian::publishJointVelocities()
   else {
     message.effort = joint_co_contractions_;
   }
-  for(int i = 0; i < num_joints_; i++) {
-    message.position.push_back(0.0); //current_joint_positions_; // TODO: Problems if not in teleop mode
-  }
+  //for(int i = 0; i < num_joints_; i++) {
+  //  message.position.push_back(0.0); //current_joint_positions_; // TODO: Problems if not in teleop mode
+  //}
   message.velocity = desired_joint_velocities_;
 
   joint_cmd_pub_.publish(message);
