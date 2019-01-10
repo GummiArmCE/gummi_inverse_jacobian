@@ -5,7 +5,6 @@
   <node name="inverse_jacobian" pkg="gummi_inverse_jacobian" type="gummi_inverse_jacobian_node" output="screen">
   	 <remap from="inverse_jacobian/joint_states" to="gummi/joint_states"/>
 	   <remap from="inverse_jacobian/joint_commands" to="gummi/joint_commands"/>
-     <remap from="inverse_jacobian/cmd_vel" to="spacenav/twist"/>
 	   <rosparam file="$(find gummi_inverse_jacobian)/config/inverse_jacobian.yaml" command="load" />
   </node>
 </launch>

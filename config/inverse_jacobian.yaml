@@ -1,5 +1,5 @@
 num_joints: 7
 max_joint_vel: 0.03
-scale_translation: 0.0005
+scale_translation: 0.00025
 scale_rotation: 0.001
 force_negative_effort: true
